@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 
 	. "drivee/internal/models"
-	repository "drivee/internal/repository/core"
 
 	"github.com/gorilla/websocket"
 )
@@ -21,11 +20,7 @@ type Client struct {
 	Hub  *Hub
 }
 
-func NewHub() *Hub {
-	db, err := repository.CreateCoreDB()
-	if err != nil {
-		panic(err)
-	}
+func NewHub(db *gorm.DB) *Hub {
 	return &Hub{
 		DB: db,
 	}

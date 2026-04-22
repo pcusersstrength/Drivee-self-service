@@ -21,7 +21,7 @@ func (c *Client) ReadPump(clientIP string) {
 			return
 		}
 		if msg.Type == "ping" {
-			log.Println("Получен ping от клиента")
+			// log.Println("Получен ping от клиента")
 			continue
 		}
 		// 1. Показываем сообщение пользователя самому себе

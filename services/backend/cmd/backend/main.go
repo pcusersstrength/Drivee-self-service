@@ -1,61 +1,126 @@
 package main
 
 import (
-	"log"
+	"errors"
+	"log/slog"
 	"net/http"
+	"os"
 
-	"drivee/pkg/ip"
-	. "drivee/internal/delivery/http"
+	"drivee/internal/config"
+	"drivee/internal/delivery/https"
 	. "drivee/internal/delivery/websocket"
 	. "drivee/internal/domain"
+	repository "drivee/internal/repository/core"
+	"drivee/pkg/ip"
+	"drivee/pkg/slogpretty"
+
+	mwLogger "drivee/internal/delivery/middleware/logger"
+
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/jwtauth/v5"
+)
+
+const (
+	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
 )
 
 func main() {
-	hub := NewHub()
+	cfg := config.MustLoad()
 
-	http.HandleFunc("/api/get_config", GetConfigHandler)
+	tokenAuth := jwtauth.New("HS256", []byte("your-secret-key"), nil)
 
-	http.HandleFunc("/api/update_config", UpdateConfigHandler)
+	log := setupLogger(cfg.Env)
+
+	db, err := repository.CreateCoreDB()
+	if err != nil {
+		panic(err)
+	}
+	hub := NewHub(db)
+
+	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logger)
+	r.Use(mwLogger.New(log))
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.URLFormat)
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	r.Group(func(r chi.Router) {
+		r.Use(jwtauth.Verifier(tokenAuth))
+		r.Use(jwtauth.Authenticator(tokenAuth))
+
+		r.Get("/api/get_config", https.GetConfigHandler)
+		r.Post("/api/update_config", https.UpdateConfigHandler)
+	})
 
 	// WebSocket endpoint
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-
-		// Разрешаем только нужный домен (или несколько)
-		allowedOrigins := map[string]bool{
-			"https://higu.su":     true,
-			"http://higu.su":      true,
-			"https://www.higu.su": true,
-		}
-
-		if origin != "" && allowedOrigins[origin] {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		} else if origin == "" {
-			// Для теста можно разрешить всё, но в продакшене — не рекомендуется
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-		}
-
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Upgrade, Sec-WebSocket-Key, Sec-WebSocket-Version, Sec-WebSocket-Protocol, Sec-WebSocket-Extensions")
-		// w.Header().Set("Access-Control-Allow-Credentials", "true") // если используешь cookies/auth
-
-		// Обработка preflight OPTIONS (очень важно для Safari!)
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
+	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		clientIP := ip.GetRealIP(r)
-		log.Printf("WebSocket connection from: %s (RemoteAddr: %s)", clientIP, r.RemoteAddr)
+		log.Info("WebSocket connection from: %s (RemoteAddr: %s)", clientIP, r.RemoteAddr)
+
+		authHeader := r.Header.Get("Authorization")
+		log.Info("Authorization header:", slog.String("header", authHeader))
 
 		ServeWS(hub, clientIP, w, r)
 	})
-
 	// Простая страница для теста чата
-	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
 
-	log.Println("Сервер запущен на http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	r.Post("/api/auth/login", https.Login(tokenAuth))
+	r.Post("/api/auth/register", https.Register(hub))
+
+	srv := &http.Server{
+		Addr:    "localhost:8080",
+		Handler: r,
+	}
+
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Error("HTTP server error", sl.Err(err))
+	}
+}
+
+func setupLogger(env string) *slog.Logger {
+	var log *slog.Logger
+
+	switch env {
+	case envLocal:
+		log = setupPrettySlog()
+	case envDev:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	}
+
+	return log
+}
+
+func setupPrettySlog() *slog.Logger {
+	opts := sl.PrettyHandlerOptions{
+		SlogOpts: &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		},
+	}
+
+	handler := opts.NewPrettyHandler(os.Stdout)
+
+	return slog.New(handler)
 }

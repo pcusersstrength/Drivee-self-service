@@ -1,0 +1,8 @@
+env: "local" #local, dev, prod
+storage_path: "storage.db"
+http_server:
+  address: "localhost:8080"
+  timeout: 4s
+  idle_timeout: 60s
+
+jwt_secret: "your_secret_token_here"
