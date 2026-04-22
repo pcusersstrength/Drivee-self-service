@@ -7,16 +7,12 @@ import (
 	"fmt"
 
 	"log"
-	"time"
 )
-
-var msg struct {
-	Text string `json:"text"`
-	// Type string `json:"type"`
-}
 
 func (c *Client) ReadPump(clientIP string) {
 	defer c.Conn.Close()
+
+	msg := &Msg{}
 
 	for {
 		err := c.Conn.ReadJSON(&msg)
@@ -24,20 +20,9 @@ func (c *Client) ReadPump(clientIP string) {
 			log.Println("Клиент отключился:", err)
 			return
 		}
-
 		// 1. Показываем сообщение пользователя самому себе
-		userMsg := Message{
-			Username:  "User",
-			Text:      msg.Text,
-			IP:        clientIP,
-			CreatedAt: time.Now(),
-		}
-		if err := c.Hub.DB.Create(&userMsg).Error; err != nil {
-			log.Println("Ошибка сохранения сообщения пользователя:", err)
-		}
-
-		c.Conn.WriteJSON(userMsg)
-
+		c.WriteMSG("User", msg.Text, clientIP)
+		log.Println(msg.Text)
 		// 2. Получаем ответ от ИИ
 		log.Println("Отправка в ии")
 		aiText, err := usecase.GetAIResponse(msg.Text)
@@ -45,7 +30,8 @@ func (c *Client) ReadPump(clientIP string) {
 			log.Println("Ошибка ии сообщения пользователя:", err)
 			continue
 		}
-
+		log.Println("исполнение в бд")
+		//исполнение в бд
 		db, err := sqlite.InitializeDB("chat.db")
 		if err != nil {
 			log.Println("Ошибка ии сообщения пользователя:", err)
@@ -94,31 +80,11 @@ func (c *Client) ReadPump(clientIP string) {
 			continue
 		}
 
-		aiMsg := Message{
-			Username:  "AI",
-			Text:      "SQL запрос:" + fmt.Sprintf("%v", msg.Text),
-			IP:        clientIP,
-			CreatedAt: time.Now(),
-		}
+		// ответ аи
+		c.WriteMSG("AI", "SQL запрос:"+fmt.Sprintf("%v", aiText), clientIP)
+		log.Println(aiText)
 
-		if err := c.Hub.DB.Create(&aiMsg).Error; err != nil {
-			log.Println("Ошибка сохранения ответа ИИ:", err)
-		}
-		
-		c.Conn.WriteJSON(aiMsg)
-
-		aiMsg = Message{
-			Username:  "AI",
-			Text:      "Результаты запроса: " + fmt.Sprintf("%v", results),
-			IP:        clientIP,
-			CreatedAt: time.Now(),
-		}
-
-		if err := c.Hub.DB.Create(&aiMsg).Error; err != nil {
-			log.Println("Ошибка сохранения ответа ИИ:", err)
-		}
-
-		// 3. Отправляем ответ ИИ пользователю
-		c.Conn.WriteJSON(aiMsg)
+		c.WriteMSG("AI", "Результаты запроса: "+fmt.Sprintf("%v", results), clientIP)
+		log.Println(results)
 	}
 }

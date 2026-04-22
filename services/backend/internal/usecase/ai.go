@@ -1,11 +1,11 @@
 package usecase
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -24,31 +24,38 @@ const (
 
 // RequestBody описывает структуру тела запроса (если API ожидает JSON)
 type RequestBody struct {
-	Text string `json:"text"`
+	Text    string `json:"q"`
+	Dialect string `json:"dialect"`
 }
 
 func GetAIResponse(text string) (string, error) {
-	// 1. Подготовка данных для отправки
-	requestData := RequestBody{
-		Text: text,
-	}
-	jsonData, err := json.Marshal(requestData)
+	// 1. Формирование URL с Query-параметрами
+	// API требует параметр "q" в строке запроса (после знака ?)
+	u, err := url.Parse(apiURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return "", fmt.Errorf("failed to parse api URL: %w", err)
 	}
 
-	// 2. Создание HTTP запроса
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	params := url.Values{}
+	params.Add("q", text) // Добавляем текст запроса в query
+	// Если API требует dialect тоже в query, раскомментируйте строку ниже:
+	// params.Add("dialect", "postgresql")
+
+	u.RawQuery = params.Encode()
+
+	// 2. Создание HTTP запроса (используем GET, так как параметры в URL)
+	// Тело (body) для GET запроса обычно не передается
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// 3. Установка заголовков
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiToken) // Обычно токены передаются так
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Accept", "application/json")
 
 	// 4. Выполнение запроса с таймаутом
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)
@@ -72,6 +79,5 @@ func GetAIResponse(text string) (string, error) {
 		return "", fmt.Errorf("api returned success=false")
 	}
 
-	// Возвращаем SQL запрос как результат
 	return aiResp.SQL, nil
 }

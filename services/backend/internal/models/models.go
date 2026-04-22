@@ -13,6 +13,11 @@ type Message struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Msg struct {
+	Text string `json:"text"`
+	// Type string `json:"type"`
+}
+
 type Config struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Login     string    `json:"username"` 
