@@ -19,7 +19,7 @@ type AIResponse struct {
 
 const (
 	apiURL   = "http://api.daemuun.ru:8000/api/sql"
-	apiToken = "9Xov01Gwyc1rUPNT86rFIEQ4HUlt1uW88tnSA683MIc=" // Замените на реальный токен
+	apiToken = ""
 )
 
 // RequestBody описывает структуру тела запроса (если API ожидает JSON)
@@ -30,7 +30,6 @@ type RequestBody struct {
 
 func GetAIResponse(text string) (string, error) {
 	// 1. Формирование URL с Query-параметрами
-	// API требует параметр "q" в строке запроса (после знака ?)
 	u, err := url.Parse(apiURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse api URL: %w", err)
@@ -38,13 +37,11 @@ func GetAIResponse(text string) (string, error) {
 
 	params := url.Values{}
 	params.Add("q", text) // Добавляем текст запроса в query
-	// Если API требует dialect тоже в query, раскомментируйте строку ниже:
-	// params.Add("dialect", "postgresql")
+	params.Add("dialect", "postgresql")
 
 	u.RawQuery = params.Encode()
 
 	// 2. Создание HTTP запроса (используем GET, так как параметры в URL)
-	// Тело (body) для GET запроса обычно не передается
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
