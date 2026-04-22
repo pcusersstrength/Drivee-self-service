@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат с ИИ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            background: #4a6cf7;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message.user {
+            align-items: flex-end;
+        }
+        .message.ai {
+            align-items: flex-start;
+        }
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        .message.user .message-bubble {
+            background: #4a6cf7;
+            color: white;
+        }
+        .message.ai .message-bubble {
+            background: #e5e7eb;
+            color: black;
+        }
+        .message-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+        }
+        input {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        button {
+            margin-left: 10px;
+            padding: 0 24px;
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #3b5bd9;
+        }
+        .status {
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Чат с ИИ
+        </div>
+        
+        <div class="chat-messages" id="messages"></div>
+        
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Напишите сообщение..." autocomplete="off">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("wss://higu.su/ws");
+        const messagesDiv = document.getElementById("messages");
+        const input = document.getElementById("messageInput");
+        
+        // Подключение
+        ws.onopen = () => {
+            addMessage("system", "✅ Подключено к серверу. Можете писать сообщения.");
+        };
+
+        ws.onclose = () => {
+            addMessage("system", "❌ Соединение закрыто. Перезагрузите страницу.");
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            addMessage("system", "⚠️ Ошибка соединения");
+            addMessage("WebSocket error:", error);
+        };
+
+        // Получение сообщений
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            addMessage(msg.username, msg.text, msg.created_at);
+        };
+
+        function addMessage(sender, text, created_at) {
+            const div = document.createElement("div");
+            div.className = `message ${sender === "User" ? "user" : sender === "AI" ? "ai" : "system"}`;
+            
+            const bubble = document.createElement("div");
+            bubble.className = "message-bubble";
+            bubble.textContent = text;
+            
+            const time = document.createElement("div");
+            time.className = "message-time";
+            
+            // ← Вот здесь главное изменение
+            if (created_at) {
+                const date = new Date(created_at);
+                time.textContent = date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            } else {
+                time.textContent = new Date().toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            }
+            
+            div.appendChild(bubble);
+            div.appendChild(time);
+            messagesDiv.appendChild(div);
+            
+            // Автоскролл вниз
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text || ws.readyState !== WebSocket.OPEN) return;
+
+            // Отправляем сообщение на сервер
+            ws.send(JSON.stringify({ text: text }));
+
+            // Очищаем поле ввода
+            input.value = "";
+        }
+
+        // Отправка по Enter
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        // Фокус на поле ввода при загрузке
+        window.onload = () => {
+            input.focus();
+        };
+    </script>
+</body>
+</html>
