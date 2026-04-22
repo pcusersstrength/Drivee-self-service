@@ -18,8 +18,8 @@ type AIResponse struct {
 }
 
 const (
-	apiURL   = "http://api.daemuun.ru:8000/api/sql"
-	apiToken = ""
+	apiURL   = "http://localhost:8000/api/sql"
+	apiToken = "your_secret_token_here"
 )
 
 // RequestBody описывает структуру тела запроса (если API ожидает JSON)
@@ -37,7 +37,7 @@ func GetAIResponse(text string) (string, error) {
 
 	params := url.Values{}
 	params.Add("q", text) // Добавляем текст запроса в query
-	params.Add("dialect", "postgresql")
+	// params.Add("dialect", "postgresql")
 
 	u.RawQuery = params.Encode()
 
@@ -52,7 +52,7 @@ func GetAIResponse(text string) (string, error) {
 	req.Header.Set("Accept", "application/json")
 
 	// 4. Выполнение запроса с таймаутом
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := &http.Client{Timeout: 90 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)

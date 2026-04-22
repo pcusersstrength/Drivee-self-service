@@ -15,7 +15,7 @@ type Message struct {
 
 type Msg struct {
 	Text string `json:"text"`
-	// Type string `json:"type"`
+	Type string `json:"type"`
 }
 
 type Config struct {

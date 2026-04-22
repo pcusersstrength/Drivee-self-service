@@ -44,18 +44,32 @@ async def generate_sql(
             json={
                 "model": "deepseek-coder:6.7b-instruct-q4_K_M",
                 "prompt": prompt,
-                "temperature": 0.1,
+                "temperature": 0.7,
                 "max_tokens": 500,
                 "stream": False,
+                "options": {
+                    "num_thread": 10,
+                    "num_batch": 512,
+                    "repeat_penalty": 1.2, # Штраф за повторения (помогает, если модель зацикливается)
+                    # "top_k": 40,           # Ограничивает выбор слов (уменьшает вариативность)
+                    # "top_p": 0.9           # Ядерное сэмплирование
+                }
             },
-            timeout=60,
+            timeout=80,
         )
 
         if response.status_code == 200:
             result = response.json()
             sql = result.get("response", "").strip()
             sql = sql.replace("```sql", "").replace("```", "").strip()
-
+            print(sql)
+            if sql == "атата":
+                return {
+                    "success": False,
+                    "question": q,
+                    "dialect": dialect,
+                    "sql": sql,
+                }
             return {
                 "success": True,
                 "question": q,

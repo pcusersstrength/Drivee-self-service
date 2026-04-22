@@ -123,10 +123,13 @@
         // Подключение
         ws.onopen = () => {
             addMessage("system", "✅ Подключено к серверу. Можете писать сообщения.");
+            console.log("Соединение установлено");
+            startPing();
         };
 
         ws.onclose = () => {
             addMessage("system", "❌ Соединение закрыто. Перезагрузите страницу.");
+            console.log("Соединение закрыто");
         };
 
         ws.onerror = (error) => {
@@ -138,8 +141,21 @@
         // Получение сообщений
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            addMessage(msg.username, msg.text, msg.created_at);
+            if (msg.type === 'pong') {
+                ws.send(JSON.stringify({ type: 'ping' }));
+                console.log("Получен pong от клиента");
+            } else {
+                addMessage(msg.username, msg.text, msg.created_at);
+            }      
         };
+
+        function startPing() {
+            pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000); // Отправляем пинг каждые 30 секунд
+        }
 
         function addMessage(sender, text, created_at) {
             const div = document.createElement("div");
