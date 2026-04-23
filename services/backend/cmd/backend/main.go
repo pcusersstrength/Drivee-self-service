@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	. "drivee/internal/domain"
 	repository "drivee/internal/repository/core"
 	"drivee/pkg/ip"
-	"drivee/pkg/slogpretty"
+	sl "drivee/pkg/slogpretty"
 
 	mwLogger "drivee/internal/delivery/middleware/logger"
 
@@ -28,10 +29,12 @@ const (
 	envProd  = "prod"
 )
 
+var frontendFS embed.FS
+
 func main() {
 	cfg := config.MustLoad()
 
-	tokenAuth := jwtauth.New("HS256", []byte("your-secret-key"), nil)
+	tokenAuth := jwtauth.New("HS256", []byte(cfg.JWTSecret), nil)
 
 	log := setupLogger(cfg.Env)
 
@@ -50,7 +53,7 @@ func main() {
 	r.Use(middleware.URLFormat)
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su", "https://app.higu.su"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -65,28 +68,34 @@ func main() {
 		r.Get("/api/get_config", https.GetConfigHandler)
 		r.Post("/api/update_config", https.UpdateConfigHandler)
 	})
-
 	// WebSocket endpoint
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		clientIP := ip.GetRealIP(r)
-		log.Info("WebSocket connection from: %s (RemoteAddr: %s)", clientIP, r.RemoteAddr)
+		log.Info("WebSocket connection", slog.String("Remote Address", r.RemoteAddr), slog.String("client IP", clientIP))
 
 		authHeader := r.Header.Get("Authorization")
 		log.Info("Authorization header:", slog.String("header", authHeader))
 
 		ServeWS(hub, clientIP, w, r)
 	})
-	// Простая страница для теста чата
-	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "index.html")
-	})
 
 	r.Post("/api/auth/login", https.Login(tokenAuth))
 	r.Post("/api/auth/register", https.Register(hub))
 
+	// Простая страница для теста чата
+	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "index.html")
+	})
+	
+
+	log.Info("starting server", slog.String("address", cfg.Address))
+
 	srv := &http.Server{
-		Addr:    "localhost:8080",
-		Handler: r,
+		Addr:         cfg.Address,
+		Handler:      r,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
 
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

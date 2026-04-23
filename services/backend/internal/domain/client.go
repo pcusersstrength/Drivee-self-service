@@ -24,10 +24,14 @@ func (c *Client) ReadPump(clientIP string) {
 			// log.Println("Получен ping от клиента")
 			continue
 		}
+
 		// 1. Показываем сообщение пользователя самому себе
-		c.WriteMSG("User", msg.Text, clientIP)
+		c.WriteMSG("","User", msg.Text, clientIP)
 		log.Println(msg.Text)
+
 		// 2. Получаем ответ от ИИ
+		c.WriteMSG("step1", "AI", "Запрос создан", clientIP)
+
 		log.Println("Отправка в ии")
 		aiText, err := usecase.GetAIResponse(msg.Text)
 		if err != nil {
@@ -35,8 +39,9 @@ func (c *Client) ReadPump(clientIP string) {
 			continue
 		}
 
+
 		// ответ аи
-		c.WriteMSG("AI", "SQL запрос:"+fmt.Sprintf("%v", aiText), clientIP)
+		c.WriteMSG("step2", "AI", fmt.Sprintf("%v", aiText), clientIP)
 		log.Println(aiText)
 
 		log.Println("исполнение в бд")
@@ -91,10 +96,10 @@ func (c *Client) ReadPump(clientIP string) {
 				continue
 			}
 
-			c.WriteMSG("AI", "Результаты запроса: "+fmt.Sprintf("%v", results), clientIP)
+			c.WriteMSG("step3", "AI", fmt.Sprintf("%v", results), clientIP)
 			log.Println(results)
 		} else {
-			c.WriteMSG("AI", "Результаты запроса: злодеяние", clientIP)
+			c.WriteMSG("table", "AI", "Результаты запроса: злодеяние", clientIP)
 			log.Println("злодеяние")
 		}
 	}

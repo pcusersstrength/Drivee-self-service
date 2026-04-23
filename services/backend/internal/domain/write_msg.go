@@ -8,9 +8,10 @@ import (
 
 // 1. Показываем сообщение пользователя самому себе
 
-func (c *Client) WriteMSG(user, text, clientIP string) error {
+func (c *Client) WriteMSG(tp, user, text, clientIP string) error {
 	userMsg := Message{
 		Username:  user,
+		Type:      tp,
 		Text:      text,
 		IP:        clientIP,
 		CreatedAt: time.Now(),

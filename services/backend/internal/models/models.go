@@ -10,6 +10,7 @@ import (
 type Message struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Username  string    `json:"username"` // "You" или "AI"
+	Type      string    `json:"type"`
 	Text      string    `json:"text"`
 	IP        string    `json:"ip"`
 	CreatedAt time.Time `json:"created_at"`
