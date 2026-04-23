@@ -53,7 +53,7 @@ func main() {
 	r.Use(middleware.URLFormat)
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su", "https://app.higu.su"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su", "https://app.higu.su", "drivee-ai.ru", "app.drivee-ai.ru"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},

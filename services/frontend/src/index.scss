@@ -1,13 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
 :root {
-  --bg: #050505;
+  --bg: #060608;
   --panel: #181b23;
+  --panel-2: #1e222d;
+  --panel-3: #242938;
   --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
   --text: #e9ecf1;
   --muted: rgba(233, 236, 241, 0.6);
   --accent: #5d39f5;
   --accent-2: #3980f6;
-  --msg: #141414;
 }
 
 body {
@@ -32,6 +34,8 @@ body {
 
   &__header {
     position: absolute;
+    display: flex;
+    justify-content: space-between;
     top: 0;
     left: 0;
     width: 100%;
@@ -61,37 +65,51 @@ body {
   &__message {
     display: flex;
     margin-bottom: 10px;
-    flex-direction: column;
 
     &--sent {
-      align-items: flex-end;
+      justify-content: flex-end;
+
+      .chat__bubble {
+        align-items: flex-end;
+      }
+
       .chat__text {
-        background: var(--msg);
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
         color: white;
         border-bottom-right-radius: 2px;
       }
     }
 
     &--received {
-      align-items: flex-start;
+      justify-content: flex-start;
+
+      .chat__bubble {
+        align-items: flex-start;
+      }
 
       .chat__text {
-        background: var(--msg);
+        background: #1c1f27;
         border-bottom-left-radius: 2px;
       }
     }
   }
 
+  .chat__bubble {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    max-width: 70%;
+    min-width: 0;
+  }
+
   &__time {
-    display: block;
-    font-size: 12px;
-    color: #fff6f6;
-    // margin-left: 10px;
-    margin-top: 5px;  
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 6px;
   }
 
   &__text {
-    // max-width: 70%;
     padding: 10px 14px;
     border-radius: 20px;
     font-size: 1.2rem;
@@ -215,6 +233,49 @@ body {
   }
 }
 
+.chat__tableWrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  border-radius: 12px;
+  background: #1c1f27;
+
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.chat__table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: #eaeaea;
+}
+
+.chat__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #232733;
+
+  text-align: left;
+  padding: 8px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat__table td {
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat__table tbody tr:hover td {
+  background: rgba(57, 128, 246, 0.08);
+}
+
 @keyframes pop {
   from {
     transform: scale(0.95);
@@ -239,128 +300,267 @@ body {
 .chat__body::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
-
 .settings {
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     z-index: 999;
   }
+
   &__window {
     position: fixed;
-    top: 25%;
-    left: 25%;
-    width: 50vw;
-    height: 50vh;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: min(55vw, 950px);
+    height: min(60vh, 700px);
+
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    gap: 20px;
     padding: 20px;
-    border-radius: 20px;
-    background: #0e0f12;
+
+    border-radius: 24px;
+    background: #131313;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+
     z-index: 1000;
+    overflow: hidden;
   }
 
+  /* LEFT PANEL */
+
   &__buttons {
-    width: 35%;
+    width: 34%;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
   }
 
   &__button {
     position: relative;
-    overflow: hidden;
     display: flex;
     align-items: center;
-    gap: 15px;
-    background-color: #1c1f27;
-    padding: 5px 25px;
-    border-radius: 13px;
-    font-size: 1.5rem;
+    gap: 14px;
+
+    padding: 14px 18px;
+    border-radius: 16px;
+
+    background: #1d1d1f;
+    color: white;
     cursor: pointer;
-    transition: 0.2s;
-    color: #fff;
+
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    img {
+      width: 24px;
+      height: 24px;
+    }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    img {
-      width: 30px;
-      height: 30px;
+      background: #232326;
     }
   }
 
-  &__button::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-
-    background: radial-gradient(
-      circle at 25% 50%,
-      rgba(57, 128, 246, 0.6),
-      rgba(57, 128, 246, 0.2) 30%,
-      transparent 60%
-    );
-
-    filter: blur(14px);
-    transform: scale(1.5);
-    pointer-events: none;
-
-    z-index: 0;
+  &__button--active {
+    background: #252830;
+    box-shadow: 0 0 20px rgba(57, 128, 246, 0.12);
   }
 
-  &__button {
-    > * {
-      position: relative;
-      z-index: 1;
-    }
-  }
+  /* DIVIDER */
 
-  /* ЦЕНТР - ЛИНИЯ */
   &__divider {
     width: 1px;
+    background: #202020;
     height: 100%;
-    background: rgba(255, 255, 255, 0.1);
   }
 
-  /* ПРАВАЯ ПАНЕЛЬ */
+  /* RIGHT PANEL */
+
   &__parameters {
     flex: 1;
-    padding: 20px;
-
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+  }
 
-    input {
-      padding: 10px;
-      border-radius: 8px;
+  &__parameter {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 
-      border: none;
-      outline: none;
+    padding: 14px;
+    border-radius: 16px;
+    background: #1a1a1c;
+  }
 
-      background: #2a2a2a;
-      color: white;
-    }
+  label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.85rem;
+  }
 
-    img {
-      width: 40px;
-      cursor: pointer;
-      transition: 0.2s;
+  input {
+    width: 100%;
+    padding: 12px;
 
-      &:hover {
-        transform: scale(1.05);
-      }
+    border: none;
+    outline: none;
+    border-radius: 12px;
+
+    background: #2a2a2d;
+    color: white;
+
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:focus {
+      background: #303035;
+      box-shadow: 0 0 0 3px rgba(57, 128, 246, 0.15);
     }
   }
 
-  /* активная кнопка */
-  &__button--active {
-    background: rgba(255, 255, 255, 0.12);
+  /* THEMES */
+
+  &__themes {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  &__theme-button {
+    width: 100%;
+    height: 140px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #1d1d1f;
+    border-radius: 20px;
+
+    cursor: pointer;
+
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    img {
+      width: 55px;
+      height: 55px;
+    }
+
+    &:hover {
+      background: #252528;
+    }
+  }
+
+  &__theme-button--active {
+    background: #252830;
+    box-shadow: 0 0 20px rgba(57, 128, 246, 0.15);
+  }
+
+  /* SAVE BUTTON */
+
+  &__save {
+    margin-top: auto;
+    width: 100%;
+
+    padding: 14px;
+    border: none;
+    border-radius: 16px;
+
+    background: #3980f6;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:hover {
+      background: #4a8cff;
+      box-shadow: 0 8px 20px rgba(57, 128, 246, 0.25);
+    }
+
+    &:active {
+      background: #2f73e3;
+    }
+  }
+}
+/* animations */
+
+@keyframes settingsOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes settingsWindowIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* animations */
+
+@keyframes settingsOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes settingsWindowIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes settingsOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes settingsWindowIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
   }
 }

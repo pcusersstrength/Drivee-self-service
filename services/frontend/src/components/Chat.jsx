@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+
 import micro from "/micro_icon.svg";
 import send from "/send_icon.svg";
 import settings from "/settings_icon.svg";
@@ -17,14 +18,47 @@ export default function Chat() {
   const pingRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // автоскролл
+  const formatTime = (ts) => {
+    if (ts) {
+      const date = new Date(ts);
+      if (!isNaN(date)) {
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+    }
+    return new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [messages, loading]);
 
-  // addMessage
+  const parseMaps = (raw) => {
+    const blocks = raw.match(/map\[(.*?)\]/g) || [];
+
+    return blocks.map((block) => {
+      const content = block.replace(/map\[|\]/g, "");
+
+      const entries = content.match(/(\w+):(<nil>|[^ ]+)/g) || [];
+
+      const obj = {};
+
+      entries.forEach((entry) => {
+        const [key, value] = entry.split(":");
+        obj[key] = value === "<nil>" ? null : value;
+      });
+
+      return obj;
+    });
+  };
+
   const addMessage = (sender, text, created_at) => {
     setMessages((prev) => [
       ...prev,
@@ -32,7 +66,6 @@ export default function Chat() {
     ]);
   };
 
-  // WS init (ВАЖНО: один раз)
   useEffect(() => {
     const ws = new WebSocket("wss://higu.su/ws");
     wsRef.current = ws;
@@ -55,12 +88,20 @@ export default function Chat() {
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
 
-      if (msg.type === "pong") {
-        return;
-      }
+      if (msg.type === "pong") return;
+
       if (msg.username === "AI") {
         setLoading(false);
+
+        const parsed = parseMaps(msg.text);
+
+        const isTable = parsed.length > 0;
+
+        addMessage("AI", isTable ? parsed : msg.text, msg.created_at);
+
+        return;
       }
+
       addMessage(msg.username, msg.text, msg.created_at);
     };
 
@@ -120,19 +161,9 @@ export default function Chat() {
     recognitionRef.current.start();
   };
 
-  const formatTime = (ts) => {
-    if (ts) {
-      const date = new Date(ts);
-      if (!isNaN(date)) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
-    }
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
   return (
     <div className="chat">
-      {showSettings && <Settings />}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       <div className="chat__container">
         <div className="chat__header">
           <h2 className="chat__title">Чат</h2>
@@ -152,8 +183,35 @@ export default function Chat() {
                   msg.sender === "User" ? "sent" : "received"
                 }`}
               >
-                <div className="chat__text">{msg.text}</div>
-                <div className="chat__time">{formatTime(msg.created_at)}</div>
+                <div className="chat__bubble">
+                  {Array.isArray(msg.text) ? (
+                    <div className="chat__tableWrapper">
+                      <table className="chat__table">
+                        <thead>
+                          <tr>
+                            {Object.keys(msg.text[0] || {}).map((key) => (
+                              <th key={key}>{key}</th>
+                            ))}
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {msg.text.map((row, i) => (
+                            <tr key={i}>
+                              {Object.values(row).map((val, j) => (
+                                <td key={j}>{val ?? "—"}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="chat__text">{msg.text}</div>
+                  )}
+
+                  <div className="chat__time">{formatTime(msg.created_at)}</div>
+                </div>
               </div>
             ))}
 

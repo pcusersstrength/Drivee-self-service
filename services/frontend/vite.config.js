@@ -9,7 +9,10 @@ export default defineConfig({
         strictPort: true,
         allowedHosts: [
             'higu.su', 
-            'app.higu.su'],
+            'app.higu.su', 
+            'drivee-ai.ru',
+            'app.drivee-ai.ru'
+          ],
         },
     }
   )
