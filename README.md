@@ -40,3 +40,15 @@ http_server:
 jwt_secret: "your_secret_token_here"
 YAML
 ```
+
+### 3. Запустите докер
+
+```bash
+docker compose up -d
+```
+
+### 4. Импортируйте модель
+
+```bash
+docker exec ollama ollama pull deepseek-coder:6.7b-instruct-q4_K_M
+```
