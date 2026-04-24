@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -28,8 +27,6 @@ const (
 	envDev   = "dev"
 	envProd  = "prod"
 )
-
-var frontendFS embed.FS
 
 func main() {
 	cfg := config.MustLoad()
@@ -68,6 +65,7 @@ func main() {
 		r.Get("/api/get_config", https.GetConfigHandler)
 		r.Post("/api/update_config", https.UpdateConfigHandler)
 	})
+	
 	// WebSocket endpoint
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		clientIP := ip.GetRealIP(r)
@@ -82,20 +80,17 @@ func main() {
 	r.Post("/api/auth/login", https.Login(tokenAuth))
 	r.Post("/api/auth/register", https.Register(hub))
 
-	// Простая страница для теста чата
-	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+	r.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("public"))))
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
-	
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
 	srv := &http.Server{
-		Addr:         cfg.Address,
-		Handler:      r,
-		ReadTimeout:  cfg.HTTPServer.Timeout,
-		WriteTimeout: cfg.HTTPServer.Timeout,
-		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+		Addr:    cfg.Address,
+		Handler: r,
 	}
 
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

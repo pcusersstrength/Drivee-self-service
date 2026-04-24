@@ -1,0 +1,3 @@
+services/backend/chat.db
+test_stand/train.csv
+.env

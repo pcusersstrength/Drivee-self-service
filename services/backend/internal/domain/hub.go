@@ -32,7 +32,7 @@ func (h *Hub) SendHistoryToClient(clientIP string) {
 	var messages []Message
 	h.DB.Where("ip = ?", clientIP).
 		Order("created_at ASC").
-		Limit(50).
+		Limit(500).
 		Find(&messages)
 
 	for _, msg := range messages {
