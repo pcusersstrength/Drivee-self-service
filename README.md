@@ -28,18 +28,6 @@ ENV
 
 ```
 
-```bash
-cat > ./services/backend/config/local.yaml <<'YAML'
-env: "local" #local, dev, prod
-storage_path: "storage.db"
-http_server:
-  address: "localhost:8080"
-  timeout: 4s
-  idle_timeout: 60s
-
-jwt_secret: "your_secret_token_here"
-YAML
-```
 
 ### 3. Запустите докер
 
@@ -51,4 +39,10 @@ docker compose up -d
 
 ```bash
 docker exec ollama ollama pull deepseek-coder:6.7b-instruct-q4_K_M
+```
+
+### 5. Импортируйте датасет
+добавьте файл train.csv в файлы проекта и запустите скрипт
+```bash
+python script.py
 ```
