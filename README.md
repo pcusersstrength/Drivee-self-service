@@ -1,5 +1,7 @@
 # Drivee-self-service
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/8d50fe73-03ed-4a4a-8329-f2d22666d063" />
+
 https://drivee-ai.ru/
 
 MVP интеллектуальной платформы, которая позволяет пользователям получать данные из базы данных **без знания SQL**, **используя естественный язык**.
