@@ -41,7 +41,6 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(mwLogger.New(log))
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.URLFormat)
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173", "http://0.0.0.0:*", "https://higu.su", "https://app.higu.su", "drivee-ai.ru", "app.drivee-ai.ru"},
@@ -60,10 +59,7 @@ func main() {
 	// WebSocket endpoint
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		clientIP := ip.GetRealIP(r)
-		log.Info("WebSocket connection", slog.String("Remote Address", r.RemoteAddr), slog.String("client IP", clientIP))
-
-		authHeader := r.Header.Get("Authorization")
-		log.Info("Authorization header:", slog.String("header", authHeader))
+		// log.Info("WebSocket connection", slog.String("Remote Address", r.RemoteAddr), slog.String("client IP", clientIP))
 
 		ServeWS(hub, clientIP, w, r)
 	})
@@ -75,6 +71,10 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
+	r.Get("/cyrillic-font.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "cyrillic-font.js")
+	})
+	
 
 	log.Info("starting server", slog.String("address", "localhost:8080"))
 

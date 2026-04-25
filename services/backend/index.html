@@ -714,6 +714,7 @@
 
     .dashboard-questions {
       display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
 
@@ -775,6 +776,53 @@
       display: block;
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* график внутри чата */
+    .chat-chart-box {
+      border-radius: 12px;
+      background: rgba(11, 13, 18, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px;
+      margin-bottom: 10px;
+      height: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-chart-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .chat-chart-box canvas {
+      flex: 1;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* кнопка скачать PDF */
+    .chat-pdf-btn {
+      margin-top: 10px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(93, 57, 245, 0.2);
+      color: #e9ecf1;
+      cursor: pointer;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s;
+      font-family: inherit;
+    }
+    .chat-pdf-btn:hover {
+      background: rgba(93, 57, 245, 0.45);
+      transform: translateY(-1px);
+    }
+    .chat-pdf-btn:active {
+      transform: translateY(0);
     }
 
     /* правая панель */
@@ -863,23 +911,17 @@
           <button
             onclick="
               setDashboardQuestion(
-                `SELECT TO_CHAR(order_timestamp, 'YYYY-MM') AS dimension, SUM(price_order_local) AS value FROM anonymized_incity_orders WHERE status_order = 'done' GROUP BY dimension ORDER BY dimension LIMIT 1000;`,
+                `SELECT TO_CHAR(order_timestamp, 'YYYY-MM') AS date, SUM(price_order_local) AS value FROM anonymized_incity_orders WHERE status_order = 'done' GROUP BY date ORDER BY date LIMIT 1000;`,
               )
             "
           >
             Сумма выручки по месяцам
           </button>
-          <button onclick="setDashboardQuestion('SELECT TOP 10 * FROM orders')">
-            Последние 10 заказов
+          <button onclick="setDashboardQuestion(`SELECT TO_CHAR(order_timestamp, 'YYYY-MM') AS date, MAX(price_order_local) AS value FROM anonymized_incity_orders WHERE status_order = 'done' GROUP BY TO_CHAR(order_timestamp, 'YYYY-MM') ORDER BY date ASC;`)">
+            Самые дорогие заказы по месяцам
           </button>
-          <button
-            onclick="
-              setDashboardQuestion(
-                'SELECT status, COUNT(*) FROM orders GROUP BY status',
-              )
-            "
-          >
-            Статусы заказов
+          <button onclick="setDashboardQuestion(`SELECT TO_CHAR(order_timestamp, 'YYYY-MM') AS date, MIN(price_order_local) AS value FROM anonymized_incity_orders WHERE status_order = 'done' GROUP BY TO_CHAR(order_timestamp, 'YYYY-MM') ORDER BY date ASC;`)">
+            Самые дешевые заказы по месяцам
           </button>
         </div>
 
@@ -1154,14 +1196,14 @@
             const bubble = document.createElement("div");
             bubble.className = "message-bubble";
 
+            const chartBox = renderChartFromMaps(text);
             const table = renderTableFromMaps(text);
 
-            if (table) {
-              bubble.innerHTML = "";
-              bubble.appendChild(table);
-            } else {
-              bubble.textContent = text;
-            }
+            bubble.innerHTML = "";
+            if (chartBox) bubble.appendChild(chartBox);
+            if (table) bubble.appendChild(table);
+            if (!chartBox && !table) bubble.textContent = text;
+            if (chartBox || table) bubble.appendChild(buildPdfButton(bubble));
 
             const time = document.createElement("div");
             time.className = "message-time";
@@ -1238,15 +1280,15 @@
 
           const bubble = document.createElement("div");
           bubble.className = "message-bubble";
-          bubble.textContent = text;
 
+          const chartBox = renderChartFromMaps(text);
           const table = renderTableFromMaps(text);
 
-          if (table) {
-            bubble.appendChild(table);
-          } else {
-            bubble.textContent = text;
-          }
+          bubble.innerHTML = "";
+          if (chartBox) bubble.appendChild(chartBox);
+          if (table) bubble.appendChild(table);
+          if (!chartBox && !table) bubble.textContent = text;
+          if (chartBox || table) bubble.appendChild(buildPdfButton(bubble));
 
           const time = document.createElement("div");
           time.className = "message-time";
@@ -1322,6 +1364,458 @@
         return rows;
       }
 
+      const chatCharts = [];
+      const PIE_COLORS = [
+        "#5d39f5",
+        "#3980f6",
+        "#06b6d4",
+        "#10b981",
+        "#f59e0b",
+        "#ef4444",
+        "#a855f7",
+      ];
+
+      function exportChartImageForPdf(originalChart) {
+        const cfg = originalChart.config;
+        const offCanvas = document.createElement("canvas");
+        offCanvas.width = 1000;
+        offCanvas.height = 500;
+        offCanvas.style.cssText =
+          "position:fixed;left:-99999px;top:0;background:#ffffff;";
+        document.body.appendChild(offCanvas);
+
+        const isPie = cfg.type === "pie" || cfg.type === "doughnut";
+        const lightOptions = {
+          responsive: false,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: isPie
+              ? {
+                  position: "right",
+                  labels: { color: "#222", boxWidth: 12, padding: 8 },
+                }
+              : { display: false },
+          },
+          scales: isPie
+            ? undefined
+            : {
+                x: {
+                  ticks: { color: "#222" },
+                  grid: { color: "#dddde3" },
+                  border: { color: "#bbbbc4" },
+                },
+                y: {
+                  ticks: { color: "#222" },
+                  grid: { color: "#dddde3" },
+                  border: { color: "#bbbbc4" },
+                },
+              },
+        };
+
+        const tempChart = new Chart(offCanvas.getContext("2d"), {
+          type: cfg.type,
+          data: JSON.parse(JSON.stringify(cfg.data)),
+          options: lightOptions,
+        });
+
+        const dataUrl = tempChart.toBase64Image("image/png", 1.0);
+        tempChart.destroy();
+        offCanvas.remove();
+        return dataUrl;
+      }
+
+      function buildChartConfig(type, labels, values) {
+        if (type === "line") {
+          return {
+            type: "line",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  data: values,
+                  borderColor: "#5d39f5",
+                  backgroundColor: "rgba(93,57,245,0.15)",
+                  tension: 0.4,
+                  fill: true,
+                  pointRadius: 4,
+                  pointBackgroundColor: "#3980f6",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  ticks: { color: "rgba(233,236,241,0.6)" },
+                  grid: { color: "rgba(255,255,255,0.05)" },
+                },
+                y: {
+                  ticks: { color: "rgba(233,236,241,0.6)" },
+                  grid: { color: "rgba(255,255,255,0.05)" },
+                },
+              },
+            },
+          };
+        }
+        if (type === "bar") {
+          return {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  data: values,
+                  backgroundColor: "rgba(93,57,245,0.7)",
+                  borderColor: "#5d39f5",
+                  borderWidth: 1,
+                  borderRadius: 6,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  ticks: { color: "rgba(233,236,241,0.6)" },
+                  grid: { display: false },
+                },
+                y: {
+                  ticks: { color: "rgba(233,236,241,0.6)" },
+                  grid: { color: "rgba(255,255,255,0.05)" },
+                },
+              },
+            },
+          };
+        }
+        if (type === "pie") {
+          return {
+            type: "pie",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  data: values,
+                  backgroundColor: PIE_COLORS.slice(0, values.length),
+                  borderColor: "rgba(11,13,18,0.45)",
+                  borderWidth: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "right",
+                  labels: {
+                    color: "rgba(233,236,241,0.8)",
+                    boxWidth: 12,
+                    padding: 8,
+                  },
+                },
+              },
+            },
+          };
+        }
+        return null;
+      }
+
+      function renderChartCanvas(type, labels, values) {
+        const box = document.createElement("div");
+        box.className = "chat-chart-box";
+
+        const title = document.createElement("div");
+        title.className = "chat-chart-title";
+        title.textContent = "График";
+        box.appendChild(title);
+
+        const canvas = document.createElement("canvas");
+        canvas.id =
+          "chatChart_" +
+          Date.now() +
+          "_" +
+          Math.random().toString(36).slice(2, 7);
+        box.appendChild(canvas);
+
+        const config = buildChartConfig(type, labels, values);
+        if (!config) return null;
+
+        setTimeout(() => {
+          const ctx = canvas.getContext("2d");
+          const c = new Chart(ctx, config);
+          chatCharts.push(c);
+        }, 0);
+
+        return box;
+      }
+
+      function renderChartFromMaps(raw) {
+        const data = parseMaps(raw);
+        if (!data.length) return null;
+
+        const cols = Object.keys(data[0]);
+
+        // === Графики: 2 колонки, одна из них "value" ===
+        if (cols.length === 2 && cols.includes("value")) {
+          const xCol = cols.find((c) => c !== "value");
+          const labels = data.map((r) => r[xCol]);
+          const values = data.map((r) => Number(r.value));
+          if (values.some((v) => !Number.isFinite(v))) return null;
+
+          let type = null;
+          if (xCol === "date") type = "line";
+          else if (xCol === "category") type = "bar";
+          else if (xCol === "label" && data.length <= 7) type = "pie";
+
+          if (!type) return null;
+          return renderChartCanvas(type, labels, values);
+        }
+
+        return null;
+      }
+
+      function findQuestionForBubble(bubbleEl) {
+        const messageEl = bubbleEl.closest(".message");
+        if (!messageEl) return "";
+        let prev = messageEl.previousElementSibling;
+        while (prev) {
+          if (
+            prev.classList &&
+            prev.classList.contains("message") &&
+            prev.classList.contains("user")
+          ) {
+            const b = prev.querySelector(".message-bubble");
+            if (b) return b.textContent.trim();
+          }
+          prev = prev.previousElementSibling;
+        }
+        return "";
+      }
+
+      function findSqlForBubble(bubbleEl) {
+        const messageEl = bubbleEl.closest(".message");
+        if (!messageEl) return "";
+        let prev = messageEl.previousElementSibling;
+        while (prev) {
+          const sqlEl =
+            prev.querySelector && prev.querySelector(".stepper-sql");
+          if (sqlEl) return sqlEl.textContent.trim();
+          prev = prev.previousElementSibling;
+        }
+        return "";
+      }
+
+      function buildPdfButton(bubbleEl) {
+        const btn = document.createElement("button");
+        btn.className = "chat-pdf-btn";
+        btn.type = "button";
+        btn.textContent = "📄 Скачать PDF";
+        btn.onclick = () => downloadBubbleAsPdf(bubbleEl);
+        return btn;
+      }
+
+      const TRANSLIT = {
+        а: "a",  б: "b",  в: "v",  г: "g",  д: "d",  е: "e",  ё: "yo",
+        ж: "zh", з: "z",  и: "i",  й: "y",  к: "k",  л: "l",  м: "m",
+        н: "n",  о: "o",  п: "p",  р: "r",  с: "s",  т: "t",  у: "u",
+        ф: "f",  х: "h",  ц: "c",  ч: "ch", ш: "sh", щ: "sch", ъ: "",
+        ы: "y",  ь: "",   э: "e",  ю: "yu", я: "ya",
+      };
+      function translit(s) {
+        if (!s) return "";
+        return s
+          .split("")
+          .map((ch) => {
+            const lower = ch.toLowerCase();
+            if (TRANSLIT[lower] !== undefined) {
+              const r = TRANSLIT[lower];
+              return ch === lower ? r : r.charAt(0).toUpperCase() + r.slice(1);
+            }
+            return ch;
+          })
+          .join("");
+      }
+
+      async function loadCyrillicFont(doc) {
+        const base64 = window.CYRILLIC_FONT_BASE64;
+        if (!base64) {
+          console.warn("Embedded cyrillic font not found, using translit");
+          return false;
+        }
+        doc.addFileToVFS("CyrFont.ttf", base64);
+        doc.addFont("CyrFont.ttf", "CyrFont", "normal");
+        doc.setFont("CyrFont");
+        return true;
+      }
+
+      async function downloadBubbleAsPdf(bubbleEl) {
+        try {
+          const { jsPDF } = window.jspdf;
+
+          // Если в таблице много колонок — landscape
+          const tableEl = bubbleEl.querySelector("table");
+          const colCount = tableEl
+            ? tableEl.querySelectorAll("thead th").length
+            : 0;
+          const orientation = colCount > 5 ? "landscape" : "portrait";
+
+          const doc = new jsPDF({
+            unit: "mm",
+            format: "a4",
+            orientation: orientation,
+          });
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const left = 14;
+          const contentW = pageWidth - left * 2;
+
+          const fontOk = await loadCyrillicFont(doc);
+          const T = (s) => (fontOk ? s : translit(s));
+
+          let question = findQuestionForBubble(bubbleEl);
+          let sql = findSqlForBubble(bubbleEl);
+          let y = 18;
+
+          // Заголовок
+          doc.setFont(fontOk ? "CyrFont" : "helvetica", "normal");
+          doc.setFontSize(20);
+          doc.setTextColor(93, 57, 245);
+          doc.text(T("Отчёт AIDE"), left, y);
+          y += 7;
+
+          // Дата
+          doc.setFontSize(10);
+          doc.setTextColor(110, 110, 110);
+          doc.text(new Date().toLocaleString("ru-RU"), left, y);
+          y += 10;
+
+          // Вопрос
+          if (question) {
+            doc.setFontSize(9);
+            doc.setTextColor(140, 140, 140);
+            doc.text(T("ВОПРОС"), left, y);
+            y += 5;
+            doc.setFontSize(12);
+            doc.setTextColor(20, 20, 20);
+            const qLines = doc.splitTextToSize(T(question), contentW);
+            doc.text(qLines, left, y);
+            y += qLines.length * 5 + 6;
+          }
+
+          // SQL
+          if (sql) {
+            doc.setFontSize(9);
+            doc.setTextColor(140, 140, 140);
+            doc.text("SQL", left, y);
+            y += 5;
+            doc.setFillColor(243, 244, 248);
+            doc.setDrawColor(220, 220, 220);
+            const sqlLines = doc.splitTextToSize(sql, contentW - 6);
+            const blockH = sqlLines.length * 4.5 + 6;
+            doc.roundedRect(left, y - 1, contentW, blockH, 2, 2, "F");
+            doc.setFontSize(9);
+            doc.setTextColor(50, 50, 50);
+            doc.text(sqlLines, left + 3, y + 4);
+            y += blockH + 6;
+          }
+
+          // Результат
+          doc.setFontSize(9);
+          doc.setTextColor(140, 140, 140);
+          doc.text(T("РЕЗУЛЬТАТ"), left, y);
+          y += 6;
+
+          // График — рендерим временный chart с цветами для светлой темы
+          const canvases = bubbleEl.querySelectorAll("canvas");
+          for (const cnv of canvases) {
+            try {
+              const inst = chatCharts.find((c) => c.canvas === cnv);
+              const dataUrl = inst
+                ? exportChartImageForPdf(inst)
+                : cnv.toDataURL("image/png");
+              const ratio = 0.5; // фикс. соотношение для exportChartImageForPdf (1000x500)
+              const imgW = Math.min(contentW, 170);
+              const imgH = imgW * ratio;
+              if (y + imgH > 280) {
+                doc.addPage();
+                y = 18;
+              }
+              doc.addImage(dataUrl, "PNG", left, y, imgW, imgH);
+              y += imgH + 6;
+            } catch (e) {
+              console.warn("canvas->png failed:", e);
+            }
+          }
+
+          // Таблица
+          const table = bubbleEl.querySelector("table");
+          if (table) {
+            const trunc = (s, n) =>
+              s && s.length > n ? s.slice(0, n) + "…" : s;
+
+            const headers = Array.from(
+              table.querySelectorAll("thead th"),
+            ).map((th) => T(th.textContent.trim()));
+            const colCount = headers.length;
+            const veryWide = colCount > 10;
+            const wide = colCount > 6;
+
+            const cellMax = veryWide ? 12 : wide ? 18 : 60;
+
+            const rows = Array.from(
+              table.querySelectorAll("tbody tr"),
+            ).map((tr) =>
+              Array.from(tr.querySelectorAll("td")).map((td) =>
+                trunc(T(td.textContent.trim()), cellMax),
+              ),
+            );
+
+            if (rows.length) {
+              const fontSize = veryWide ? 5 : wide ? 7 : 9;
+              const cellPadding = veryWide ? 0.8 : wide ? 1.5 : 3;
+              doc.autoTable({
+                head: headers.length ? [headers] : undefined,
+                body: rows,
+                startY: y,
+                margin: { left: left, right: left },
+                tableWidth: "auto",
+                styles: {
+                  font: fontOk ? "CyrFont" : "helvetica",
+                  fontSize: fontSize,
+                  cellPadding: cellPadding,
+                  textColor: [40, 40, 40],
+                  overflow: "linebreak",
+                  cellWidth: "wrap",
+                  minCellWidth: 8,
+                },
+                headStyles: {
+                  fillColor: [93, 57, 245],
+                  textColor: [255, 255, 255],
+                  fontStyle: "normal",
+                  fontSize: fontSize,
+                  cellPadding: cellPadding,
+                },
+                alternateRowStyles: { fillColor: [248, 248, 252] },
+              });
+            }
+          }
+
+          const safeQ = (question || "report")
+            .slice(0, 40)
+            .replace(/[^\wа-яА-Я0-9 ]+/g, "")
+            .replace(/\s+/g, "_");
+          const filename = `aide_${translit(safeQ)}_${Date.now()}.pdf`;
+          doc.save(filename);
+        } catch (e) {
+          console.error("PDF export error:", e);
+          alert("Не удалось сохранить PDF: " + e.message);
+        }
+      }
+
       function renderTableFromMaps(raw) {
         const data = parseMaps(raw);
         if (!data.length) return null;
@@ -1385,7 +1879,7 @@
 
             const chartData = data.chart;
 
-            const labels = chartData.map((item) => item.dimension);
+            const labels = chartData.map((item) => item.date);
             const values = chartData.map((item) => Number(item.value)); // важно!
 
             renderChart(labels, values);
@@ -1438,9 +1932,10 @@
 
       window.addEventListener("resize", () => {
         if (chart) chart.resize();
+        chatCharts.forEach((c) => c.resize());
       });
 
-      setDashboardQuestion("SELECT COUNT(*) FROM users");
+      setDashboardQuestion("Здесь будет ваш SQL");
 
       // Отправка по Enter
       input.addEventListener("keypress", (e) => {
@@ -1455,5 +1950,8 @@
       };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="./cyrillic-font.js"></script>
   </body>
 </html>

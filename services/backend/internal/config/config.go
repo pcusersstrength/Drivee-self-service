@@ -22,7 +22,7 @@ type HTTPServer struct {
 }
 
 func MustLoad() *Config {
-	configPath := "./local.yaml" //os.Getenv("CONFIG_PATH")
+	configPath := "./local.yaml" 
 	if configPath == "" {
 		log.Fatal("CONFIG_PATH is not set")
 	}
@@ -39,5 +39,3 @@ func MustLoad() *Config {
 
 	return &cfg
 }
-
-//go run github.com/swaggo/swag/cmd/swag@latest init -g ./cmd/main.go --parseDependency --parseInternal -o internal/delivery/http/docs

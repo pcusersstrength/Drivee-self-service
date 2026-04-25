@@ -46,6 +46,29 @@ async def verify_token(token: str):
     return True
 
 
+DEFAULT_COLUMNS = {
+    "anonymized_incity_orders": "order_id, city_id, status_order, price_order_local, order_timestamp",
+    "passenger_daily_metrics": "user_id, city_id, order_date_part, orders_count, rides_count",
+    "driver_daily_metrics": "driver_id, city_id, tender_date_part, rides_count, online_time_sum_seconds",
+}
+
+
+def fix_select_star(sql: str) -> str:
+    pattern = re.compile(
+        r"SELECT\s+\*\s+FROM\s+(\w+)",
+        flags=re.IGNORECASE,
+    )
+
+    def replacer(match: "re.Match[str]") -> str:
+        table = match.group(1).lower()
+        cols = DEFAULT_COLUMNS.get(table)
+        if cols:
+            return f"SELECT {cols} FROM {match.group(1)}"
+        return match.group(0)
+
+    return pattern.sub(replacer, sql)
+
+
 def postprocess_sql(raw: str) -> str:
     sql = raw.strip()
     sql = sql.replace("```sql", "").replace("```", "").strip()
@@ -55,6 +78,7 @@ def postprocess_sql(raw: str) -> str:
         sql = sql.split(";")[0].strip() + ";"
 
     sql = re.sub(r"\s+", " ", sql).strip()
+    sql = fix_select_star(sql)
     return sql
 
 
@@ -83,8 +107,8 @@ def call_ollama(prompt: str) -> str:
                 "stream": False,
                 "options": {
                     "temperature": 0.1,
-                    "num_predict": 300,
-                    "num_ctx": 4096,
+                    "num_predict": 500,
+                    "num_ctx": 6144,
                     "top_k": 40,
                     "top_p": 0.9,
                     "repeat_penalty": 1.0,
@@ -94,7 +118,7 @@ def call_ollama(prompt: str) -> str:
                     "stop": ["\nUser:", "\n\n", "```"],
                 },
             },
-            timeout=80,
+            timeout=180,
         )
     except requests.exceptions.Timeout:
         raise HTTPException(status_code=504, detail="Request timeout")

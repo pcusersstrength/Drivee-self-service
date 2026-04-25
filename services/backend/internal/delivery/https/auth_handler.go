@@ -23,13 +23,6 @@ func Login(tokenAuth *jwtauth.JWTAuth) http.HandlerFunc { // Добавь storag
 		}
 		fmt.Println(req.Password, req.Username)
 
-		// Проверка credentials (hardcoded для примера; в реальности — из БД с хэшированием паролей, например bcrypt)
-		// if req.Username != "admin" || req.Password != "password" {
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	render.JSON(w, r, Error("Internal error"))
-		// 	return
-		// }
-
 		exp := time.Now().Add(24 * time.Hour)
 
 		// Создай claims с ролью
