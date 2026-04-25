@@ -8,8 +8,10 @@ import (
 	"drivee/internal/domain"
 	. "drivee/internal/models"
 
-	"gorm.io/driver/sqlite"
+
 	"gorm.io/gorm"
+
+	"github.com/glebarez/sqlite"
 )
 
 func ReadConfig(clientIP string) (*Config, error) {

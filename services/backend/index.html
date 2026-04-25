@@ -9,7 +9,7 @@
     <title>Чат с ИИ</title>
   </head>
   <style>
-        @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200..1000&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200..1000&display=swap");
 
     :root {
       /* базовые */
@@ -37,60 +37,6 @@
       --container-width: clamp(320px, 90vw, 900px);
       --padding: clamp(12px, 2vw, 20px);
       --radius: clamp(12px, 2vw, 20px);
-    }
-    
-    .quick-questions {
-      margin-bottom: 10px;
-      position: fixed;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-
-      width: calc(100% - 40px);
-      max-width: 700px;
-
-      display: flex;
-      gap: 10px;
-    }
-
-    @media (max-width: 768px) {
-      .quick-questions {
-        bottom: 80px;
-        padding: 8px 10px;
-      }
-      .chat-messages {
-        padding: 64px 14px 140px;
-      }
-    }
-
-    .quick-questions button {
-      flex: 1;
-      min-width: 0;
-
-      padding: 10px 12px;
-      border-radius: 12px;
-
-      border: 1px solid rgba(255, 255, 255, 0.08);
-
-      background: var(--panel-2); /* плотный тёмный фон */
-      color: var(--text);
-
-      cursor: pointer;
-      transition: 0.2s ease;
-
-      white-space: normal;
-      word-break: break-word;
-      text-align: center;
-
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
-    }
-
-    .quick-questions button:hover {
-      background: var(--accent);
-
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(92, 57, 245, 0.046);
     }
 
     /* === BODY === */
@@ -203,25 +149,20 @@
 
     /* === INPUT === */
     .input-area {
-      position: fixed;
-      bottom: clamp(10px, 2vh, 20px);
-      left: 50%;
+      position: absolute;
+      bottom: 20px;
+      left: 16px; /* вместо 50% + translate */
+      right: 16px;
       transform: translateX(-50%);
-
       width: calc(100% - 40px);
       max-width: 700px;
-
       display: flex;
       gap: clamp(6px, 1vw, 10px);
       align-items: center;
-
       padding: clamp(8px, 1vw, 12px) clamp(15px, 2vw, 20px);
-
       border-radius: 999px;
-
       background: rgba(11, 13, 18, 0.4);
       backdrop-filter: blur(12px);
-
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -340,7 +281,17 @@
       position: relative;
     }
 
+    .stepper-circle {
+      width: clamp(30px, 4vw, 40px);
+      height: clamp(30px, 4vw, 40px);
+      border-radius: 50%;
 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      margin-right: 10px;
+    }
 
     .stepper-status {
       display: inline-block;
@@ -352,6 +303,17 @@
 
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stepper-circle.stepper-error {
+      background-color: #ff4d4f !important;
+      color: white !important;
+      border-color: #ff4d4f !important;
+    }
+    .stepper-error-status {
+      background-color: #ff4d4f !important;
+      color: white !important;
+      border-color: white !important;
     }
 
     /* === АНИМАЦИЯ === */
@@ -370,17 +332,6 @@
       display: flex;
       position: relative;
       margin-bottom: 24px;
-    }
-
-    .stepper-circle.stepper-error {
-      background-color: #ff4d4f !important;
-      color: white !important;
-      border-color: #ff4d4f !important;
-    }
-    .stepper-error-status {
-      background-color: #ff4d4f !important; 
-      color: white !important;
-      border-color: white !important;
     }
 
     .stepper-sql {
@@ -657,60 +608,329 @@
         white-space: nowrap;
         max-width: 100%;
       }
+    }
 
+    .quick-questions {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+
+      width: calc(100% - 40px);
+      max-width: 700px;
+
+      display: flex;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .quick-questions {
+        bottom: 80px;
+        padding: 8px 10px;
+      }
+      .chat-messages {
+        padding: 64px 14px 140px;
+      }
+    }
+
+    .quick-questions button {
+      flex: 1;
+      min-width: 0;
+
+      padding: 10px 12px;
+      border-radius: 12px;
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      background: var(--panel-2); /* плотный тёмный фон */
+      color: var(--text);
+
+      cursor: pointer;
+      transition: 0.2s ease;
+
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+    }
+
+    .quick-questions button:hover {
+      background: var(--accent);
+
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(92, 57, 245, 0.046);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: "Nunito", sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app-shell {
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 16px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    /* общая карточная логика */
+    .dashboard,
+    .chat-container {
+      position: relative;
+      min-height: 0;
+      border-radius: 24px;
+      background: linear-gradient(
+        180deg,
+        rgba(24, 27, 35, 0.96),
+        rgba(18, 20, 28, 0.96)
+      );
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    /* левая панель */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .dashboard-header {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(11, 13, 18, 0.65);
+      backdrop-filter: blur(12px);
+      font-weight: 700;
+    }
+
+    .dashboard-questions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dashboard-questions button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--panel-2);
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .dashboard-questions button:hover {
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .sql-window,
+    .chart-box {
+      border-radius: 18px;
+      background: rgba(11, 13, 18, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 14px;
+    }
+
+    .sql-window {
+      min-height: 120px;
+    }
+
+    .sql-window-title,
+    .chart-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    #sqlText {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #dfe6ff;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .chart-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #dbChart {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* правая панель */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      max-width: none;
+      margin: 0;
+    }
+
+    .chat-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    /* сообщения растягиваются внутри правой половины */
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      padding: 74px 16px 150px;
+      overflow-y: auto;
+    }
+
+    /* quick questions именно для чата */
+    .quick-questions {
+      position: absolute;
+      bottom: 100px;
+      left: 16px;
+      right: 16px;
+      transform: none;
+      max-width: none;
+      width: auto;
+      z-index: 20;
+    }
+
+    .input-area {
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: none;
+      z-index: 100;
+    }
+
+    /* мобильная адаптация */
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .app-shell {
+        height: auto;
+        min-height: 100dvh;
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard,
+      .chat-container {
+        min-height: 700px;
+      }
+
+      .quick-questions {
+        bottom: 92px;
+      }
+    }
+
+    #dbChart {
+      width: 100%;
+      height: 93% !important;
+    }
+
+    .chart-box {
+      height: 240px;
+      max-height: 420px; /* важно */
     }
 
   </style>
   <body>
-    <div class="chat-container">
-      <div class="chat-header">
-        <p>Ассистент AIDE</p>
-        <button class="chat-settings-btn">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g clip-path="url(#clip0_319_216)">
-          <path d="M21.4337 9.07286L21.026 8.84565L20.9002 8.77437C20.5965 8.59213 20.3407 8.34013 20.1539 8.03927C20.1339 8.0092 20.1161 7.9769 20.0804 7.91453C19.8403 7.52908 19.7237 7.07944 19.7463 6.62588L19.753 6.15252C19.7664 5.39514 19.773 5.01423 19.6661 4.67341C19.5715 4.37017 19.4132 4.09067 19.2017 3.85367C18.9633 3.58636 18.6325 3.39479 17.9698 3.01387L17.4196 2.69644C16.7602 2.31664 16.4295 2.12619 16.0786 2.05379C15.7686 1.98965 15.4486 1.99231 15.1397 2.06159C14.7911 2.13955 14.4647 2.33558 13.8132 2.7254L13.8098 2.72763L13.4156 2.96264C13.3532 3.00051 13.3209 3.01833 13.2897 3.03615C12.9801 3.20879 12.6348 3.30346 12.2795 3.31459C12.2438 3.31682 12.2071 3.31682 12.1347 3.31682L11.9899 3.31571C11.6345 3.30439 11.287 3.20815 10.9764 3.03504C10.9452 3.01833 10.9151 2.99939 10.8527 2.96153L10.4551 2.72318C9.79909 2.3289 9.47053 2.13287 9.11968 2.05379C8.80967 1.9844 8.48839 1.98212 8.17742 2.04711C7.82547 2.12062 7.49579 2.31219 6.83531 2.69533L6.83197 2.69644L6.28844 3.01165L6.28287 3.0161C5.62797 3.39479 5.2994 3.58636 5.06328 3.85255C4.85286 4.08911 4.69529 4.36781 4.60106 4.67007C4.49525 5.012 4.50082 5.39292 4.51418 6.15475L4.52198 6.62699C4.52198 6.69939 4.52532 6.73503 4.52421 6.76955C4.51844 7.17422 4.40254 7.56966 4.18896 7.91341C4.1522 7.97578 4.1355 8.00697 4.11656 8.03593C3.92877 8.33907 3.67094 8.59269 3.36476 8.77548L3.24001 8.84565L2.83794 9.06841C2.16744 9.4393 1.83219 9.6253 1.58939 9.89038C1.37351 10.1241 1.21021 10.4013 1.11046 10.7034C0.999079 11.0454 0.99908 11.4274 1.00019 12.1937L1.00242 12.8207C1.00353 13.5815 1.00576 13.9613 1.11825 14.301C1.21759 14.6012 1.37971 14.8769 1.59384 15.1096C1.83665 15.3724 2.16855 15.5573 2.83348 15.9271L3.23222 16.1487C3.30016 16.1866 3.33469 16.2044 3.36699 16.2245C3.71602 16.4337 4.00107 16.7345 4.19119 17.0943L4.26581 17.228C4.45394 17.5832 4.54246 17.9827 4.52198 18.3841L4.51418 18.8374C4.50082 19.6015 4.49525 19.9846 4.60217 20.3265C4.69684 20.6295 4.855 20.9091 5.06662 21.1463C5.30497 21.4136 5.63688 21.6041 6.29847 21.9861L6.84868 22.3035C7.50915 22.6833 7.83883 22.8738 8.18967 22.9462C8.49965 23.0103 8.81973 23.0076 9.12859 22.9384C9.47832 22.8604 9.80466 22.6644 10.4585 22.2723L10.8527 22.0362L10.9786 21.9627C11.2882 21.7912 11.6335 21.6954 11.9888 21.6842L12.1336 21.6831H12.2784C12.6326 21.6943 12.9801 21.7912 13.2919 21.9638L13.3944 22.0251L13.8132 22.2768C14.4703 22.6711 14.7978 22.8671 15.1486 22.9451C15.4585 23.0152 15.7797 23.0182 16.0909 22.954C16.4417 22.8805 16.7736 22.6878 17.4341 22.3046L17.9854 21.985C18.6403 21.6041 18.9689 21.4136 19.205 21.1474C19.4166 20.9102 19.5726 20.6317 19.6672 20.3299C19.773 19.9902 19.7675 19.6126 19.7541 18.8619L19.7452 18.3718V18.2304C19.7504 17.8255 19.8659 17.4296 20.0793 17.0854L20.1517 16.9629C20.3395 16.6598 20.5973 16.4061 20.9035 16.2234L21.026 16.1554L21.0283 16.1543L21.4303 15.9315C22.1008 15.5595 22.4361 15.3747 22.68 15.1096C22.8961 14.8757 23.0587 14.5972 23.1578 14.2965C23.2692 13.9568 23.2692 13.5759 23.267 12.8185L23.2647 12.1792C23.2636 11.4185 23.2625 11.0376 23.15 10.6979C23.0502 10.3979 22.8877 10.1227 22.6733 9.89038C22.4316 9.62753 22.0997 9.44264 21.4359 9.07398L21.4337 9.07286Z" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M7.67773 12.5001C7.67773 13.6816 8.14711 14.8148 8.98261 15.6503C9.81811 16.4858 10.9513 16.9552 12.1329 16.9552C13.3144 16.9552 14.4476 16.4858 15.2831 15.6503C16.1186 14.8148 16.588 13.6816 16.588 12.5001C16.588 11.3185 16.1186 10.1853 15.2831 9.3498C14.4476 8.5143 13.3144 8.04492 12.1329 8.04492C10.9513 8.04492 9.81811 8.5143 8.98261 9.3498C8.14711 10.1853 7.67773 11.3185 7.67773 12.5001Z" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <defs>
-          <clipPath id="clip0_319_216">
-          <rect width="24" height="24" fill="white"/>
-          </clipPath>
-          </defs>
-          </svg>
-        </button>
-      </div>
+    <div class="app-shell">
+      <aside class="dashboard">
+        <div class="dashboard-header">
+          <p>Статистика</p>
+        </div>
 
-      <div class="chat-messages" id="messages"></div>
+        <div class="dashboard-questions">
+          <button
+            onclick="
+              setDashboardQuestion(
+                `SELECT TO_CHAR(order_timestamp, 'YYYY-MM') AS dimension, SUM(price_order_local) AS value FROM anonymized_incity_orders WHERE status_order = 'done' GROUP BY dimension ORDER BY dimension LIMIT 1000;`,
+              )
+            "
+          >
+            Сумма выручки по месяцам
+          </button>
+          <button onclick="setDashboardQuestion('SELECT TOP 10 * FROM orders')">
+            Последние 10 заказов
+          </button>
+          <button
+            onclick="
+              setDashboardQuestion(
+                'SELECT status, COUNT(*) FROM orders GROUP BY status',
+              )
+            "
+          >
+            Статусы заказов
+          </button>
+        </div>
 
-      <div class="quick-questions">
-        <button onclick="setQuestion('Сколько записей в таблице?')">
-          Сколько записей в таблице?
-        </button>
-        <button onclick="setQuestion('Выведи первые 10 записей')">
-          Выведи первые 10 записей
-        </button>
+        <div class="sql-window">
+          <div class="sql-window-title">SQL запрос</div>
+          <pre id="sqlText">SELECT ...</pre>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Данные из БД</div>
+          <canvas id="dbChart" width="520" height="260"></canvas>
+        </div>
+      </aside>
+
+      <main class="chat-container">
+        <div class="chat-header">
+          <p>Ассистент AIDE</p>
+        </div>
+
+        <div class="chat-messages" id="messages"></div>
+
+        <div class="quick-questions">
+          <button onclick="setQuestion('Сколько записей в таблице?')">
+            Сколько записей в таблице?
+          </button>
+          <button onclick="setQuestion('Выведи первые 10 записей')">
+            Выведи первые 10 записей
+          </button>
         <button onclick="setQuestion('Сколько данных за 2025 год?')">Сколько данных за 2025 год?</button>
-      </div>
+        </div>
 
-      <div class="input-area">
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Напишите сообщение..."
-          autocomplete="off"
-        />
-        <button id="voice-btn">
+        <div class="input-area">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Напишите сообщение..."
+            autocomplete="off"
+          />
+          <button id="voice-btn">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 0C13.023 0 14.0041 0.399247 14.7274 1.10991C15.4508 1.82058 15.8571 2.78444 15.8571 3.78947V11.3684C15.8571 12.3735 15.4508 13.3373 14.7274 14.048C14.0041 14.7586 13.023 15.1579 12 15.1579C10.977 15.1579 9.99594 14.7586 9.27259 14.048C8.54923 13.3373 8.14286 12.3735 8.14286 11.3684V3.78947C8.14286 2.78444 8.54923 1.82058 9.27259 1.10991C9.99594 0.399247 10.977 0 12 0ZM21 11.3684C21 15.8274 17.6443 19.5032 13.2857 20.1221V24H10.7143V20.1221C6.35571 19.5032 3 15.8274 3 11.3684H5.57143C5.57143 13.0435 6.24872 14.6499 7.45431 15.8344C8.6599 17.0188 10.295 17.6842 12 17.6842C13.705 17.6842 15.3401 17.0188 16.5457 15.8344C17.7513 14.6499 18.4286 13.0435 18.4286 11.3684H21Z" fill="white"/>
           </svg>
 
-        </button>
-        <button onclick="sendMessage()">
+          </button>
+          <button onclick="sendMessage()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2953 0.300821C11.4823 0.108196 11.7357 0 12 0C12.2643 0 12.5177 0.108196 12.7047 0.300821L20.6826 8.5297C20.7806 8.62387 20.8592 8.73743 20.9137 8.86361C20.9682 8.98978 20.9975 9.12599 20.9998 9.2641C21.0022 9.40221 20.9776 9.5394 20.9274 9.66748C20.8773 9.79556 20.8026 9.91191 20.7079 10.0096C20.6132 10.1073 20.5004 10.1843 20.3762 10.236C20.2521 10.2877 20.1191 10.3131 19.9852 10.3107C19.8513 10.3083 19.7192 10.278 19.5969 10.2218C19.4746 10.1656 19.3645 10.0845 19.2732 9.98347L12.9972 3.51008V22.9714C12.9972 23.2442 12.8922 23.5058 12.7052 23.6987C12.5181 23.8916 12.2645 24 12 24C11.7355 24 11.4819 23.8916 11.2948 23.6987C11.1078 23.5058 11.0028 23.2442 11.0028 22.9714V3.51008L4.72683 9.98347C4.63553 10.0845 4.52543 10.1656 4.40311 10.2218C4.28078 10.278 4.14873 10.3083 4.01483 10.3107C3.88093 10.3131 3.74793 10.2877 3.62375 10.236C3.49958 10.1843 3.38678 10.1073 3.29208 10.0096C3.19739 9.91191 3.12273 9.79556 3.07258 9.66748C3.02242 9.5394 2.99779 9.40221 3.00016 9.2641C3.00252 9.12599 3.03183 8.98978 3.08633 8.86361C3.14083 8.73743 3.21942 8.62387 3.3174 8.5297L11.2953 0.300821Z" fill="white"/>
           </svg>
-        </button>
-      </div>
+          </button>
+        </div>
+      </main>
     </div>
 
     <script>
@@ -1145,6 +1365,83 @@
         table.appendChild(tbody);
         return table;
       }
+
+      const sqlText = document.getElementById("sqlText");
+      const ctx = document.getElementById("dbChart").getContext("2d");
+
+      let chart; // храним экземпляр
+
+      function setDashboardQuestion(sql) {
+        fetch("https://drivee-ai.ru/api/get_chart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sql }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data);
+
+            const chartData = data.chart;
+
+            const labels = chartData.map((item) => item.dimension);
+            const values = chartData.map((item) => Number(item.value)); // важно!
+
+            renderChart(labels, values);
+          })
+          .catch((err) => {
+            console.error("Ошибка:", err);
+          });
+
+        sqlText.textContent = sql;
+      }
+
+      function renderChart(labels, values) {
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                data: values,
+                borderColor: "#5d39f5",
+                backgroundColor: "rgba(93,57,245,0.15)",
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: "#3980f6",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: {
+                ticks: { color: "rgba(233,236,241,0.6)" },
+                grid: { color: "rgba(255,255,255,0.05)" },
+              },
+              y: {
+                ticks: { color: "rgba(233,236,241,0.6)" },
+                grid: { color: "rgba(255,255,255,0.05)" },
+              },
+            },
+          },
+        });
+      }
+
+      window.addEventListener("resize", () => {
+        if (chart) chart.resize();
+      });
+
+      setDashboardQuestion("SELECT COUNT(*) FROM users");
+
       // Отправка по Enter
       input.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
@@ -1157,5 +1454,6 @@
         input.focus();
       };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </body>
 </html>

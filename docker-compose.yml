@@ -15,7 +15,11 @@ services:
       - OLLAMA_MAX_LOADED_MODELS=1
 
   ai-service:
-    build: .
+    build: 
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+      args:
+        SERVICE: ai-service
     container_name: ai-service
     ports:
       - "8000:8000"
@@ -27,5 +31,29 @@ services:
       - ollama
     restart: unless-stopped
 
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE:   backend
+    container_name: backend
+    ports:
+      - "8080:8080"
+
+
 volumes:
   ollama_data:
+  postgres_data:

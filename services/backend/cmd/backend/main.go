@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"drivee/internal/config"
 	"drivee/internal/delivery/https"
 	. "drivee/internal/delivery/websocket"
 	. "drivee/internal/domain"
@@ -19,7 +18,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/jwtauth/v5"
 )
 
 const (
@@ -29,11 +27,7 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad()
-
-	tokenAuth := jwtauth.New("HS256", []byte(cfg.JWTSecret), nil)
-
-	log := setupLogger(cfg.Env)
+	log := setupLogger("local")
 
 	db, err := repository.CreateCoreDB()
 	if err != nil {
@@ -59,13 +53,10 @@ func main() {
 	}))
 
 	r.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(tokenAuth))
-		r.Use(jwtauth.Authenticator(tokenAuth))
-
 		r.Get("/api/get_config", https.GetConfigHandler)
 		r.Post("/api/update_config", https.UpdateConfigHandler)
 	})
-	
+
 	// WebSocket endpoint
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		clientIP := ip.GetRealIP(r)
@@ -77,8 +68,7 @@ func main() {
 		ServeWS(hub, clientIP, w, r)
 	})
 
-	r.Post("/api/auth/login", https.Login(tokenAuth))
-	r.Post("/api/auth/register", https.Register(hub))
+	r.Post("/api/get_chart", https.GetChart())
 
 	r.Handle("/*", http.StripPrefix("/", http.FileServer(http.Dir("public"))))
 
@@ -86,10 +76,10 @@ func main() {
 		http.ServeFile(w, r, "index.html")
 	})
 
-	log.Info("starting server", slog.String("address", cfg.Address))
+	log.Info("starting server", slog.String("address", "localhost:8080"))
 
 	srv := &http.Server{
-		Addr:    cfg.Address,
+		Addr:    "localhost:8080",
 		Handler: r,
 	}
 
